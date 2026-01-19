@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omnitrix OS v1.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --omni-green: #00ff41;
+            --omni-red: #ff3131;
+            --bg-color: #0a0a0a;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            transition: background 0.5s;
+        }
+
+        /* Transformation Flash Class */
+        .transform-flash {
+            background-color: white !important;
+        }
+
+        .omni-container {
+            position: relative;
+            text-align: center;
+        }
+
+        /* The Watch Face */
+        .watch-core {
+            width: 320px;
+            height: 320px;
+            background: #222;
+            border-radius: 50%;
+            border: 15px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 50px rgba(0,0,0,1);
+            position: relative;
+            cursor: pointer;
+        }
+
+        .watch-core:active { transform: scale(0.95); }
+
+        .screen {
+            width: 240px;
+            height: 240px;
+            background: #000;
+            border-radius: 50%;
+            border: 5px solid var(--omni-green);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #alien-image {
+            width: 180px;
+            height: 180px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 10px var(--omni-green));
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+            z-index: 2;
+        }
+
+        #alien-name {
+            position: absolute;
+            bottom: 20px;
+            font-size: 14px;
+            color: var(--omni-green);
+            text-shadow: 0 0 5px var(--omni-green);
+        }
+
+        /* Status Bar */
+        .status {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #555;
+        }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            background: #111;
+            border: 2px solid var(--omni-green);
+            color: var(--omni-green);
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: 'Orbitron';
+        }
+
+        .nav-btn:hover { background: var(--omni-green); color: black; }
+
+    </style>
+</head>
+<body>
+
+    <div class="omni-container">
+        <h2 id="os-status">SYSTEM: READY</h2>
+        
+        <div class="watch-core" id="main-button">
+            <div class="screen" id="main-screen">
+                <img src="https://static.wikia.nocookie.net/ben10/images/2/2b/Heatblast_classic_official.png" id="alien-image" alt="Alien">
+                <div id="alien-name">HEATBLAST</div>
+            </div>
+        </div>
+
+        <div class="status">CLICK CENTER TO TRANSFORM</div>
+
+        <div class="controls">
+            <button class="nav-btn" onclick="prevAlien()">< PREV</button>
+            <button class="nav-btn" onclick="nextAlien()">NEXT ></button>
+        </div>
+    </div>
+
+    <audio id="beep" src="https://www.soundjay.com/buttons/beep-01a.mp3"></audio>
+
+    <script>
+        // 1. Data Structure for Aliens
+        const aliens = [
+            { name: "HEATBLAST", img: "https://imgs.search.brave.com/siybdzgA144pF_CJXEIUKXx3IT3S0S88nvl8Yuzekfk/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly93YWxs/cGFwZXJjYXZlLmNv/bS93cC93cDM3NTky/MzIuanBn", color: "#ff4500" },
+            { name: "FOUR ARMS", img: "https://imgs.search.brave.com/S0vILOuk69A6mBde9zJQ9XL2c-Q1DD44GAp8l1o6IsA/rs:fit:500:0:1:0/g:ce/aHR0cDovL2JlbjEw/aGVyby5jb20vd3At/Y29udGVudC91cGxv/YWRzLzIwMTYvMDcv/Zm91cmFybXNfb2Zp/Y2lhbF8yLnBuZw", color: "#d20000" },
+            { name: "XLR8", img: "https://imgs.search.brave.com/Fhma6v01GbU3LCgYHKGl0AJ418MmY8ip6DEOr4ZZXbU/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly93YWxs/cGFwZXJjYXZlLmNv/bS93cC93cDkxMDA5/MzkucG5n", color: "#00f2ff" },
+            { name: "DIAMONDHEAD", img: "https://imgs.search.brave.com/l2-NGISWpSyjYPvWjXmtWWxNHkoGmO9fBS8cPzz0_mo/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9pLmVi/YXlpbWcuY29tL2lt/YWdlcy9nLzlFc0FB/ZVN3MW9CbjN1czkv/cy1sNTAwLndlYnA", color: "#b9f2ff" }
+        ];
+
+        let currentIndex = 0;
+
+        // 2. Select Elements
+        const alienImg = document.getElementById('alien-image');
+        const alienName = document.getElementById('alien-name');
+        const mainScreen = document.getElementById('main-screen');
+        const osStatus = document.getElementById('os-status');
+        const body = document.body;
+
+        // 3. Navigation Function
+        function updateDisplay() {
+            // Play Beep
+            document.getElementById('beep').play();
+
+            // Animate Exit
+            alienImg.style.opacity = '0';
+            alienImg.style.transform = 'scale(0.5) rotate(-20deg)';
+
+            setTimeout(() => {
+                // Update Content
+                alienImg.src = aliens[currentIndex].img;
+                alienName.innerText = aliens[currentIndex].name;
+                
+                // Animate Entrance
+                alienImg.style.opacity = '1';
+                alienImg.style.transform = 'scale(1) rotate(0deg)';
+            }, 200);
+        }
+
+        function nextAlien() {
+            currentIndex = (currentIndex + 1) % aliens.length;
+            updateDisplay();
+        }
+
+        function prevAlien() {
+            currentIndex = (currentIndex - 1 + aliens.length) % aliens.length;
+            updateDisplay();
+        }
+
+        
+        document.getElementById('main-button').addEventListener('click', () => {
+           
+            body.classList.add('transform-flash');
+            osStatus.innerText = "TRANSFORMED: " + aliens[currentIndex].name;
+            
+          
+            setTimeout(() => {
+                body.classList.remove('transform-flash');
+                body.style.background = `radial-gradient(circle, ${aliens[currentIndex].color}44 0%, #000 100%)`;
+            }, 150);
+
+           
+            mainScreen.style.animation = "shake 0.2s ease-in-out";
+            setTimeout(() => mainScreen.style.animation = "", 180);
+        });
+
+    </script>
+</body>
+</html>
